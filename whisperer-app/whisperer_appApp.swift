@@ -1,17 +1,39 @@
-//
-//  whisperer_appApp.swift
-//  whisperer-app
-//
-//  Created by Louis DOUGE on 29/5/23.
-//
-
 import SwiftUI
 
 @main
-struct whisperer_appApp: App {
+struct MyApp: App {
+    @StateObject private var store = Store()
+    @State private var errorWrapper: ErrorWrapper?
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TranscriptRecordsView(transcriptRecords: $store.transcriptRecords) {
+                Task {
+                    do {
+                        try await store.save(record: store.transcriptRecords)
+                    } catch {
+                        fatalError(error.localizedDescription)
+                    }
+                }
+            }
+            .task {
+                do {
+                    try await store.load()
+                } catch {
+                    errorWrapper = ErrorWrapper(
+                        error: error,
+                        guidance: "The transcription app will load sample data and continue.")
+                }
+            }
+            .sheet(item: $errorWrapper) {
+
+                            store.transcriptRecords = TranscriptRecord.sampleData
+
+                        } content: { wrapper in
+
+                            ErrorView(errorWrapper: wrapper)
+
+                        }
         }
     }
 }
