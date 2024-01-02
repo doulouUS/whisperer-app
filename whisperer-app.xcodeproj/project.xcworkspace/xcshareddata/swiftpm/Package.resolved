@@ -1,0 +1,23 @@
+{
+  "pins" : [
+    {
+      "identity" : "audiokit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AudioKit/AudioKit.git",
+      "state" : {
+        "revision" : "82cab9d4c168b5b03b67e2ff099819f589b530f7",
+        "version" : "5.6.2"
+      }
+    },
+    {
+      "identity" : "swiftwhisper",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/exPHAT/SwiftWhisper.git",
+      "state" : {
+        "branch" : "fast",
+        "revision" : "deb1cb6a27256c7b01f5d3d2e7dc1dcc330b5d01"
+      }
+    }
+  ],
+  "version" : 2
+}
