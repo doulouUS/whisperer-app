@@ -4,7 +4,7 @@ import AVFoundation
 
 struct ContentView: View {
     @Binding var transcriptRecord: TranscriptRecord
-    @StateObject var speechRecognizer = SpeechRecognizer()
+    @StateObject var speechRecognizer = AudioRecorderManager()
     @State private var isRecording = false
     
     @State private var recordedFileURL: URL?

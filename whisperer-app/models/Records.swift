@@ -35,13 +35,13 @@ extension TranscriptRecord {
 extension TranscriptRecord {
     static let sampleData: [TranscriptRecord] = [
         TranscriptRecord(title: "Text to my friend",
-                   lengthInSeconds: 12,
-                         soundRecording: nil,  //URL(string: "sound_file_1"),
+                         lengthInSeconds: 12,
+                         soundRecording: Bundle.main.url(forResource: "speech-1", withExtension: "wav", subdirectory: "Preview Assets"), // URL(string: "Ressources/recordings/speech-1.wav"),  //
                    transcription: "Hi, just to let you know I'll be visiting next week-end, let me know if I can bring anything. See you!",
                    theme: .yellow),
         TranscriptRecord(title: "Reminder for dance group",
                    lengthInSeconds: 8,
-                    soundRecording: nil,  // URL(string: "sound_file_2"),
+                    soundRecording: Bundle.main.url(forResource: "speech-2", withExtension: "wav", subdirectory: "Resources/recordings"),
                    transcription: "Guys! Well done on the competition yesterday!",
                    theme: .orange)
     ]

@@ -15,18 +15,14 @@ enum TranscriptionState: Equatable {
     case waiting, recording, running, finished
 }
 
-enum ModelLoadingError: Error {
-    case modelnotfound
-}
-
 
 struct RecordAndTranscriptRefactored: View {
     @Binding var transcriptRecord: TranscriptRecord
     @State private var status = TranscriptionState.waiting
     
-    @StateObject var speechRecognizer = SpeechRecognizer()
-    
-    @State private var audioPlayer: AVAudioPlayer?
+    @StateObject private var audioRecorderManager = AudioRecorderManager()
+    @StateObject private var audioPlayerManager = AudioPlayerManager()
+    @StateObject var transcriptionManager: TranscriptionManager
 
     var body: some View {
         ZStack {
@@ -69,9 +65,19 @@ struct RecordAndTranscriptRefactored: View {
                             withAnimation(nil) {
                                 print("Start recording")
                                 status = .recording
-                                speechRecognizer.startRecording()
+                                audioRecorderManager.startRecording()
                             }
                         }
+                        /*
+                        .onAppear {
+                            do {
+                                try transcriptionManager.load_whisper()
+                            } catch {
+                                print("Failed loading model")
+                            }
+                        }
+                         */
+                    
                 case .recording:
                     Image(systemName: "mic")
                         .font(.title)
@@ -91,13 +97,13 @@ struct RecordAndTranscriptRefactored: View {
                         .onTapGesture {
                             withAnimation(nil) {
                                 print("Stop recording")
-                                speechRecognizer.stopRecording()
                                 status = .running
+                                audioRecorderManager.stopRecording()
                             }
                         }
                     
                 case .running:
-                    ProgressView(value: 5, total: 100)
+                    ProgressView(value: transcriptionManager.progress, total: 1.0)
                     Text(verbatim: "Loading...")
                         .font(.caption)
                         .fontWeight(.light)
@@ -117,39 +123,46 @@ struct RecordAndTranscriptRefactored: View {
                             .padding()
                         }
                         .onAppear {
-                            if let file_url = speechRecognizer.fileURL {
-                                print("Start transcription")
-                                do {
-                                    let _ = try transcribe(file: file_url)
-                                    
-                                }
-                                catch {
-                                    print("Failed transcription")
-                                    
+                            withAnimation(nil) {
+                                if let file_url = audioRecorderManager.fileURL {
+                                    print("Start transcription")
+                                    do {
+                                        let _ = try transcriptionManager.transcribe(file: file_url, transcriptRecord: $transcriptRecord, status: $status)
+                                    }
+                                    catch {
+                                        print("Failed transcription")
+                                        
+                                    }
                                 }
                             }
+                        }
+                        .onDisappear {
+                            transcriptionManager.progress = 0.0
                         }
                         
                     
                 case .finished:
                     HStack {
-                        if let _ = transcriptRecord.soundRecording {
+                        if let soundRecordingURL = transcriptRecord.soundRecording {
                                 Button(action: {
-                                    audioPlayer?.play()
+                                    do {
+                                        try audioPlayerManager.playAudio(url: soundRecordingURL)
+                                    } catch {
+                                        print("Error playing audio: \(error)")
+                                    }
                                 }) {
                                     Image(systemName: "play.circle")
                                         .font(.system(size: 50))
                                 }
-                                .disabled(transcriptRecord.soundRecording == nil)
+                                 .disabled(audioPlayerManager.isPlaying)
                                 
                                 Button(action: {
-                                    audioPlayer?.stop()
-                                    audioPlayer?.currentTime = 0
+                                    audioPlayerManager.stopAudio()
                                 }) {
                                     Image(systemName: "stop.circle")
                                         .font(.system(size: 50))
                                 }
-                                .disabled(transcriptRecord.soundRecording == nil)
+                                .disabled(!audioPlayerManager.isPlaying)
                         } else
                         {
                             EmptyView()
@@ -175,14 +188,15 @@ struct RecordAndTranscriptRefactored: View {
                         .onTapGesture {
                             print("Start recording")
                             status = .recording
-                            speechRecognizer.startRecording()
+                            audioRecorderManager.startRecording()
                         }
-                    /*
-                        .onChange(of: isRecording) { newValue in
-                            // Toggle state after the function call
-                            isRecording = newValue
+                        .onAppear {
+                            if let soundRecordingURL = transcriptRecord.soundRecording {
+                                if let audioDuration = audioPlayerManager.getAudioDuration(from: soundRecordingURL) {
+                                    transcriptRecord.lengthInSeconds = Int(audioDuration)
+                                }
+                                }
                         }
-                     */
                 }
                 
             }
@@ -192,7 +206,7 @@ struct RecordAndTranscriptRefactored: View {
         .navigationBarTitleDisplayMode(.inline)
     }
     
-    func transcribe(file audioFileURL: URL) throws {
+    func transcribe(file audioFileURL: URL, transcriptRecord: Binding<TranscriptRecord>) throws {
         guard let modelURL = Bundle.main.url(
             forResource: "ggml-tiny.en",
             withExtension: "bin",
@@ -211,20 +225,23 @@ struct RecordAndTranscriptRefactored: View {
                 whisper_transcript = segments.map(\.text).joined()
                 print("transcription: \(whisper_transcript)")
                 
-                transcriptRecord.transcription = whisper_transcript
-                transcriptRecord.soundRecording = audioFileURL
-                
-                status = .finished
+                // Dispatch UI related code to main queue so the UI can update itself
+                DispatchQueue.main.async {
+                    transcriptRecord.wrappedValue.transcription = whisper_transcript
+                    transcriptRecord.wrappedValue.soundRecording = audioFileURL
+                }
             }
         }
     }
 }
 
-
+/*
 struct RecordAndTranscriptRefactored_Previews: PreviewProvider {
     static var previews: some View {
         RecordAndTranscriptRefactored(
-            transcriptRecord: .constant(TranscriptRecord.sampleData[0])
+            transcriptRecord: .constant(TranscriptRecord.sampleData[0]),
+            transcriptionManager:
         )
     }
 }
+*/

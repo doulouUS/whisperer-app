@@ -11,7 +11,7 @@ import AVFoundation
 struct RecordDetailsView: View {
     @Binding var record: TranscriptRecord
     
-    @State private var audioPlayer: AVAudioPlayer?
+    @StateObject private var audioPlayerManager = AudioPlayerManager()
     
     @State private var isPresentingEditView = false
     
@@ -35,35 +35,14 @@ struct RecordDetailsView: View {
                 .fontWeight(.light)
                 .multilineTextAlignment(.leading)
             
-            HStack {
-                if let soundRecordingURL = record.soundRecording {
-                    Button(action: {
-                        do {
-                            audioPlayer = try AVAudioPlayer(contentsOf: soundRecordingURL)
-                            audioPlayer?.prepareToPlay()
-                            audioPlayer?.play()
-                        } catch {
-                            print("Error creating AVAudioPlayer: \(error)")
-                        }
-                    }) {
-                        Image(systemName: "play.circle")
-                            .font(.system(size: 50))
-                    }
-                    .disabled(audioPlayer != nil)
-                    
-                    Button(action: {
-                        audioPlayer?.stop()
-                        audioPlayer?.currentTime = 0
-                        audioPlayer = nil
-                    }) {
-                        Image(systemName: "stop.circle")
-                            .font(.system(size: 50))
-                    }
-                    .disabled(audioPlayer == nil)
-                } else {
-                    EmptyView()
-                }
+            
+            if let soundRecordingURL = record.soundRecording {
+                Spacer()
+                AudioPlayerView(audioPlayerManager: audioPlayerManager, soundRecordingURL: soundRecordingURL)
+            } else {
+                EmptyView()
             }
+            
         }
         .padding()
         .toolbar {

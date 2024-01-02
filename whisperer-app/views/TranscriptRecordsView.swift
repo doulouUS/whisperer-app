@@ -10,6 +10,8 @@ import SwiftUI
 
 struct TranscriptRecordsView: View {
     @Binding var transcriptRecords: [TranscriptRecord]
+    @StateObject var transcriptionManager: TranscriptionManager
+    
     @Environment(\.scenePhase) private var scenePhase
     
     @State private var newTranscriptRecord = TranscriptRecord.emptyTranscriptRecord
@@ -19,11 +21,16 @@ struct TranscriptRecordsView: View {
     
     var body: some View {
         NavigationView {
-            List($transcriptRecords) { $trRecord in
-                NavigationLink(destination: RecordDetailsView(record: $trRecord)) {
-                    RecordView(record: trRecord)
+            List {
+                ForEach($transcriptRecords) { $trRecord in
+                    NavigationLink(destination: RecordDetailsView(record: $trRecord)) {
+                        RecordView(record: trRecord)
+                    }
+                    .listRowBackground(trRecord.theme.mainColor)
                 }
-                .listRowBackground(trRecord.theme.mainColor)
+                .onDelete { indexSet in
+                    transcriptRecords.remove(atOffsets: indexSet)
+                }
             }
             .navigationTitle("Transcripts")
             .toolbar {
@@ -36,17 +43,19 @@ struct TranscriptRecordsView: View {
             }
             .fullScreenCover(isPresented: $isShowingRecordAndTranscriptView) {
                 NavigationView {
-                    RecordAndTranscriptRefactored(transcriptRecord: $newTranscriptRecord)
+                    RecordAndTranscriptRefactored(transcriptRecord: $newTranscriptRecord, transcriptionManager: transcriptionManager)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Cancel") {
                                 isShowingRecordAndTranscriptView = false
+                                newTranscriptRecord = TranscriptRecord.emptyTranscriptRecord
                             }
                         }
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Save") {
                                 isShowingRecordAndTranscriptView = false
                                 transcriptRecords.append(newTranscriptRecord)
+                                newTranscriptRecord = TranscriptRecord.emptyTranscriptRecord
                             }
                         }
                     }
@@ -65,7 +74,9 @@ struct TranscriptRecordsView_Previews: PreviewProvider {
     static var previews: some View {
         TranscriptRecordsView(
             transcriptRecords: .constant(TranscriptRecord.sampleData),
+            transcriptionManager: TranscriptionManager(),
             saveAction: {}
         )
     }
 }
+

@@ -14,6 +14,8 @@ struct RecordDetailsEditView: View {
         Form {
             Section(header: TextField("Title", text: $transcriptRecord.title)) {
             }
+            Section(header: TextField("Transcribed content", text: $transcriptRecord.transcription)) {
+            }
         }
     }
 
