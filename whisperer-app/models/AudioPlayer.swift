@@ -21,6 +21,12 @@ class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
     func playAudio(url: URL) throws {
         do {
+            // Set the audio session category to play using the loudspeaker
+            // TODO: handle external devices (bluetooth, headphones, etc.)
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: [.defaultToSpeaker])
+            try AVAudioSession.sharedInstance().setActive(true)
+            
+            // init and play audio
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.delegate = self
             audioPlayer?.prepareToPlay()
